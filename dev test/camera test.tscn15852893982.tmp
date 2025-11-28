@@ -1,0 +1,84 @@
+[gd_scene load_steps=13 format=3 uid="uid://caltoi643nxi0"]
+
+[ext_resource type="PackedScene" uid="uid://d0cffklo3ef5i" path="res://User Interface/Pause Menu.tscn" id="1_2vqgd"]
+[ext_resource type="Material" uid="uid://dhl7kijhrn2xg" path="res://placeholder_mat.tres" id="1_g8drd"]
+[ext_resource type="Script" uid="uid://46yjcuclweil" path="res://scripts/pause.gd" id="1_vpwqw"]
+[ext_resource type="Script" uid="uid://cm7uwuks6rtey" path="res://camera.gd" id="2_q3bdb"]
+[ext_resource type="Script" uid="uid://si6sbfye21t7" path="res://scripts/player.gd" id="3_q3bdb"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ilubj"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_q3bdb"]
+size = Vector3(20, 1, 20)
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_ao14t"]
+height = 4.0
+radius = 0.2
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_2wriq"]
+radius = 0.25
+height = 0.5
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_rav0a"]
+top_radius = 0.2
+bottom_radius = 0.2
+height = 4.0
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_devyf"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_2pox4"]
+
+[node name="Node3D" type="Node3D"]
+
+[node name="PauseMenu" parent="." instance=ExtResource("1_2vqgd")]
+process_mode = 3
+script = ExtResource("1_vpwqw")
+
+[node name="Floor" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
+material_override = ExtResource("1_g8drd")
+mesh = SubResource("PlaneMesh_ilubj")
+skeleton = NodePath("../..")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_q3bdb")
+
+[node name="CameraArm" type="RigidBody3D" parent="." node_paths=PackedStringArray("player", "armCol", "camCol", "camera")]
+transform = Transform3D(1, 0, 0, 0, 0.5, -0.866025, 0, 0.866025, 0.5, 0, 3.41897, 5.86003)
+custom_integrator = true
+script = ExtResource("2_q3bdb")
+player = NodePath("../Player")
+armCol = NodePath("ArmCol")
+camCol = NodePath("CamCol")
+camera = NodePath("Camera3D")
+
+[node name="ArmCol" type="CollisionShape3D" parent="CameraArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+shape = SubResource("CylinderShape3D_ao14t")
+
+[node name="CamCol" type="CollisionShape3D" parent="CameraArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 1.19209e-07)
+shape = SubResource("CapsuleShape3D_2wriq")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CameraArm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+visible = false
+mesh = SubResource("CylinderMesh_rav0a")
+
+[node name="Camera3D" type="Camera3D" parent="CameraArm"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 4, 0)
+
+[node name="Player" type="CharacterBody3D" parent="."]
+script = ExtResource("3_q3bdb")
+run_walk_trans_time = 0.2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_devyf")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_2pox4")
