@@ -1,6 +1,15 @@
 extends Camera3D
 
 @export var player : CharacterBody3D
+
+@export var camera_yaw_speed : float = 360 * PI/180
+@export var camera_pitch_speed : float = 180 * PI/180
+
+## Fraction of remaining camera rotation speed realized per second.
+## Basically, higher values give snappier camera motion.
+## If it exceeds the number of physics ticks per second, the camera will always go exactly the speed requested by the input.
+@export var camera_acceleration : float = 5
+
 @export var camera_focus_offset : Vector3 = Vector3(0, 1, 0)
 @export var max_camera_distance : float = 6
 
@@ -18,7 +27,30 @@ extends Camera3D
 var yaw : float = 0
 var pitch : float = -30 * PI/180
 
+var current_camera_speed_mul : float = 0
+
 func _physics_process(delta: float) -> void:
+	# Get Stick Inputs
+	var camera_input : Vector2 = Vector2.ZERO
+	if Input.is_action_pressed("StickSwap"):
+		camera_input = Globals.get_normalized_input_vec(
+			"MoveForward", "MoveRight", "MoveBackward", "MoveLeft"
+		)
+	
+	else:
+		camera_input = Globals.get_normalized_input_vec(
+			"CamUp", "CamRight", "CamDown", "CamLeft"
+		)
+	
+	# Adjust camera in response to input
+	current_camera_speed_mul = lerpf(
+		current_camera_speed_mul, camera_input.length(), camera_acceleration*delta
+	)
+	
+	rotate_yaw_pitch(
+		camera_input * Vector2(camera_yaw_speed, camera_pitch_speed) * delta * current_camera_speed_mul
+	)
+	
 	var facing = Vector3.FORWARD.rotated(Vector3.RIGHT, pitch).rotated(Vector3.UP, yaw)
 	var focus = player.position + camera_focus_offset
 	

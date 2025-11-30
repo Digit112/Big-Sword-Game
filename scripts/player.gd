@@ -87,16 +87,6 @@ extends CharacterBody3D
 ## Equilibrium speed at which the player will no longer vertically accelerate under the influence of gravity. If the player is already moving downward faster than this, they will accelerate towards the equilibrium.
 @export var cling_vertical_equilibrium_speed : float = -12
 
-@export_subgroup("Camera Controls")
-
-@export var camera_yaw_speed : float = 360 * PI/180
-@export var camera_pitch_speed : float = 180 * PI/180
-
-## Fraction of remaining camera rotation speed realized per second.
-## Basically, higher values give snappier camera motion.
-## If it exceeds the number of physics ticks per second, the camera will always go exactly the speed requested by the input.
-@export var camera_acceleration : float = 5
-
 @export_subgroup("Buffer Times & Transitions")
 
 ## How long to buffer for jumps off of the ground or walls.
@@ -204,8 +194,6 @@ var time_since_dash : float = INF
 var currently_jumping : bool = false
 var currently_dashing : bool = false
 var dash_velocity : Vector3 = Vector3.ZERO
-
-var current_camera_speed_mul : float = 0
 
 # Tweened
 var current_ground_speed : float = 0
@@ -361,31 +349,19 @@ func _physics_process(delta):
 	time_since_dash += delta
 	
 	# Get Stick Inputs
-	var directional_input = Globals.get_normalized_input_vec(
-		"MoveForward", "MoveRight", "MoveBackward", "MoveLeft"
-	)
-	
-	var camera_input = Globals.get_normalized_input_vec(
-		"CamUp", "CamRight", "CamDown", "CamLeft"
-	)
-	
-	# Swap stick inputs
+	var directional_input : Vector2 = Vector2.ZERO
 	if Input.is_action_pressed("StickSwap"):
-		var temp = directional_input
-		directional_input = camera_input
-		camera_input = temp
+		directional_input = Globals.get_normalized_input_vec(
+			"CamUp", "CamRight", "CamDown", "CamLeft"
+		)
+	
+	else:
+		directional_input = Globals.get_normalized_input_vec(
+			"MoveForward", "MoveRight", "MoveBackward", "MoveLeft"
+		)
 	
 	# Adjust directional input to match camera.
 	directional_input = directional_input.rotated(-camera.yaw)
-	
-	# Adjust camera
-	current_camera_speed_mul = lerpf(
-		current_camera_speed_mul, camera_input.length(), camera_acceleration*delta
-	)
-	
-	camera.rotate_yaw_pitch(
-		camera_input * Vector2(camera_yaw_speed, camera_pitch_speed) * delta * current_camera_speed_mul
-	)
 	
 	# Consider dashing.
 	if ActionBuffer.get_time_since_last_press("Dash", true) < dash_buffer_time and can_dash():
