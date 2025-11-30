@@ -1,9 +1,8 @@
-[gd_scene load_steps=13 format=3 uid="uid://caltoi643nxi0"]
+[gd_scene load_steps=12 format=3 uid="uid://caltoi643nxi0"]
 
 [ext_resource type="PackedScene" uid="uid://d0cffklo3ef5i" path="res://User Interface/Pause Menu.tscn" id="1_2vqgd"]
 [ext_resource type="Material" uid="uid://dhl7kijhrn2xg" path="res://placeholder_mat.tres" id="1_g8drd"]
 [ext_resource type="Script" uid="uid://46yjcuclweil" path="res://Scripts/pause.gd" id="1_vpwqw"]
-[ext_resource type="Script" uid="uid://dmup5nc0gld5c" path="res://Scripts/debug_gui.gd" id="3_mdopv"]
 [ext_resource type="Script" uid="uid://si6sbfye21t7" path="res://Scripts/player.gd" id="3_q3bdb"]
 [ext_resource type="Script" uid="uid://bbumqt0xt8erj" path="res://Scripts/camera.gd" id="5_2vqgd"]
 
@@ -27,41 +26,6 @@ size = Vector3(0.645, 0.255, 0.515)
 [node name="PauseMenu" parent="." instance=ExtResource("1_2vqgd")]
 process_mode = 3
 script = ExtResource("1_vpwqw")
-
-[node name="Panel" type="Panel" parent="PauseMenu" node_paths=PackedStringArray("player", "lbl_state", "lbl_is_jumping", "lbl_is_dashing")]
-self_modulate = Color(0, 0, 0, 0.392157)
-layout_mode = 0
-offset_right = 200.0
-offset_bottom = 85.0
-script = ExtResource("3_mdopv")
-player = NodePath("../../Player")
-lbl_state = NodePath("State")
-lbl_is_jumping = NodePath("Is Jumping")
-lbl_is_dashing = NodePath("Is Dashing")
-
-[node name="State" type="Label" parent="PauseMenu/Panel"]
-layout_mode = 0
-offset_left = 8.0
-offset_top = 8.0
-offset_right = 98.0
-offset_bottom = 31.0
-text = "STATE"
-
-[node name="Is Jumping" type="Label" parent="PauseMenu/Panel"]
-layout_mode = 0
-offset_left = 8.0
-offset_top = 31.0
-offset_right = 97.0
-offset_bottom = 54.0
-text = "IS JUMPING"
-
-[node name="Is Dashing" type="Label" parent="PauseMenu/Panel"]
-layout_mode = 0
-offset_left = 8.0
-offset_top = 54.0
-offset_right = 99.0
-offset_bottom = 77.0
-text = "IS DASHING"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_2vqgd")

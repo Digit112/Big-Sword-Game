@@ -35,13 +35,16 @@ extends CharacterBody3D
 @export var aerial_lateral_deceleration : float = 28
 
 ## Rate of lateral deceleration while soaring.
-@export var soaring_lateral_deceleration : float = 3
+@export var soaring_lateral_deceleration : float = 12
 
 ## Rate of maximum lateral acceleration imparted by directional input while soaring
-@export var soaring_max_accel : float = 8
+@export var soaring_max_lateral_acceleration : float = 16
+
+## Fraction of lateral velocity lost per second while soaring.
+@export var soaring_lateral_friction : float = 0.5
 
 ## Speed at which an aerial player is forced into the AERIAL_SOARING state.
-@export var freefall_soaring_speed_threshhold : float = 22
+@export var freefall_soaring_speed_threshhold : float = 16
 
 ## Gravity used during freefall
 @export var gravity : float = -30
@@ -226,8 +229,7 @@ func can_slide() -> bool:
 
 func can_soar() -> bool:
 	# We can soar if we are moving faster than the top normal aerial speed by a bit.
-	var speed_threshhold = aerial_speed + 1
-	return Globals.lateralize(velocity).length() >= speed_threshhold
+	return Globals.lateralize(velocity).length() >= freefall_soaring_speed_threshhold
 
 ## Transistions to the appropriate grounded state based on velocity.
 func become_grounded() -> void:
@@ -266,7 +268,12 @@ func jump() -> void:
 	currently_jumping = true
 	
 	if get_broad_state() == GROUNDED:
-		velocity.y += jump_velocity
+		if currently_dashing:
+			dash_velocity.y += jump_velocity
+		
+		else:
+			velocity.y += jump_velocity
+		
 		become_aerial()
 	
 	elif get_broad_state() == CLUNG:
@@ -371,12 +378,6 @@ func _physics_process(delta):
 	if currently_dashing and time_since_dash > dash_duration:
 		currently_dashing = false
 	
-	# Consider jumping
-	var attempting_jump : bool = ActionBuffer.get_time_since_last_press("Jump", true) < jump_buffer_time
-	var can_jump : bool = not currently_jumping and get_broad_state() in [GROUNDED, CLUNG, HANGING]
-	if attempting_jump and can_jump:
-		jump()
-	
 	# If (still) dashing, set a specific velocity.
 	if currently_dashing:
 		velocity = dash_velocity
@@ -453,7 +454,6 @@ func _physics_process(delta):
 					lateral_velocity.length(), 0, sliding_deceleration * delta
 				) * exp(-sliding_friction * delta)
 				
-				
 				if ground_speed_this_frame < run_speed:
 					current_ground_speed = run_speed
 					set_state(GROUNDED_RUNNING)
@@ -489,7 +489,11 @@ func _physics_process(delta):
 				# While soaring, carry momentum.
 				lateral_movement_dir = lateral_velocity.move_toward(
 					Vector2.ZERO, soaring_lateral_deceleration * delta
-				) + directional_input * soaring_max_accel * delta
+				) * (
+					exp(-soaring_lateral_friction * delta)
+				) + (
+					directional_input * soaring_max_lateral_acceleration * delta
+				)
 				
 				lateral_speed_this_frame = lateral_movement_dir.length()
 			
@@ -497,6 +501,12 @@ func _physics_process(delta):
 				lateral_movement_dir = lateral_movement_dir.normalized()
 				velocity.x = lateral_movement_dir.x * lateral_speed_this_frame
 				velocity.z = lateral_movement_dir.y * lateral_speed_this_frame
+	
+	# Consider jumping
+	var attempting_jump : bool = ActionBuffer.get_time_since_last_press("Jump", true) < jump_buffer_time
+	var can_jump : bool = not currently_jumping and get_broad_state() in [GROUNDED, CLUNG, HANGING]
+	if attempting_jump and can_jump:
+		jump()
 	
 	move_and_slide()
 	
