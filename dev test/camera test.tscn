@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://caltoi643nxi0"]
+[gd_scene load_steps=12 format=3 uid="uid://caltoi643nxi0"]
 
 [ext_resource type="PackedScene" uid="uid://d0cffklo3ef5i" path="res://User Interface/Pause Menu.tscn" id="1_2vqgd"]
 [ext_resource type="Material" uid="uid://dhl7kijhrn2xg" path="res://placeholder_mat.tres" id="1_g8drd"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://dmup5nc0gld5c" path="res://Scripts/debug_gui.gd" id="3_mdopv"]
 [ext_resource type="Script" uid="uid://si6sbfye21t7" path="res://Scripts/player.gd" id="3_q3bdb"]
 [ext_resource type="Script" uid="uid://bbumqt0xt8erj" path="res://Scripts/camera.gd" id="5_2vqgd"]
+[ext_resource type="PackedScene" uid="uid://beylbx87o0vif" path="res://Meshes/Dani/Poly Girl.glb" id="6_uvnyu"]
 
 [sub_resource type="Environment" id="Environment_2vqgd"]
 background_mode = 1
@@ -16,11 +17,8 @@ background_color = Color(0.534114, 0.567172, 0.587479, 1)
 [sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_2vqgd"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_devyf"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_2pox4"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_2vqgd"]
-size = Vector3(0.645, 0.255, 0.515)
+radius = 0.249882
+height = 1.70145
 
 [node name="Node3D" type="Node3D"]
 
@@ -79,23 +77,59 @@ skeleton = NodePath("../..")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
 shape = SubResource("WorldBoundaryShape3D_2vqgd")
 
-[node name="Player" type="CharacterBody3D" parent="." node_paths=PackedStringArray("camera")]
+[node name="Player" type="CharacterBody3D" parent="." node_paths=PackedStringArray("camera", "anim")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.00770295, 0)
 collision_layer = 3
 collision_mask = 458752
 script = ExtResource("3_q3bdb")
 camera = NodePath("../Camera")
+anim = NodePath("Poly Girl/AnimationPlayer")
+aerial_turn_speed = 140.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.838705, -0.0711388)
 shape = SubResource("CapsuleShape3D_devyf")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Player"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-mesh = SubResource("CapsuleMesh_2pox4")
+[node name="Poly Girl" parent="Player" instance=ExtResource("6_uvnyu")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
 
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="Player"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.71045, -0.301527)
-mesh = SubResource("BoxMesh_2vqgd")
+[node name="Skeleton3D" parent="Player/Poly Girl/Armature" index="0"]
+bones/0/position = Vector3(-9.17657e-19, 0.0425033, 0.0715324)
+bones/0/rotation = Quaternion(-2.98023e-08, 1.19209e-07, -2.52435e-29, 1)
+bones/1/rotation = Quaternion(-3.55271e-15, 7.10543e-15, -1.00974e-28, 1)
+bones/2/rotation = Quaternion(5.04871e-29, -1.19209e-07, -8.47033e-22, 1)
+bones/3/rotation = Quaternion(-3.00926e-36, 7.10543e-15, -8.47033e-22, 1)
+bones/5/rotation = Quaternion(-0.0212068, 0.110565, -0.829144, 0.547581)
+bones/6/rotation = Quaternion(0.121718, 0.0719817, -0.495565, 0.856982)
+bones/7/rotation = Quaternion(0.0502815, -0.00142674, 0.0375555, 0.998028)
+bones/8/rotation = Quaternion(-0.0219902, 0.00202972, 0.0919239, 0.995521)
+bones/9/rotation = Quaternion(-7.45206e-08, 3.88639e-08, -0.104444, 0.994531)
+bones/10/rotation = Quaternion(-0.0152703, -0.103146, 0.819536, 0.563461)
+bones/11/rotation = Quaternion(0.120294, -0.0735164, 0.50191, 0.853353)
+bones/12/rotation = Quaternion(0.0502945, 0.00139979, -0.033186, 0.998182)
+bones/13/rotation = Quaternion(-0.0219902, -0.00202971, -0.0919239, 0.995521)
+bones/14/rotation = Quaternion(-8.97933e-08, -3.63386e-08, 0.104444, 0.994531)
+bones/15/position = Vector3(0.0702197, -0.0105009, 0.0865357)
+bones/15/rotation = Quaternion(-0.618946, -0.00602739, 0.77774, -0.109501)
+bones/16/position = Vector3(0.10727, 0.0265041, 0.00705678)
+bones/16/rotation = Quaternion(0.699517, 0.204431, -0.672437, 0.129279)
+bones/17/position = Vector3(-0.00229927, 0.0156258, -0.083187)
+bones/17/rotation = Quaternion(-0.542213, -0.0524805, 0.837785, 0.0369605)
+bones/17/scale = Vector3(1, 1, 1.00001)
+bones/18/position = Vector3(-0.0702197, -0.0105009, 0.0865357)
+bones/18/rotation = Quaternion(0.618946, -0.00602739, 0.77774, 0.109501)
+bones/18/scale = Vector3(1, 1, 1)
+bones/19/position = Vector3(-0.10727, 0.0265041, 0.00705673)
+bones/19/rotation = Quaternion(0.699471, -0.204347, 0.672523, 0.129209)
+bones/20/rotation = Quaternion(0.707103, -0.00162561, 0.706663, 0.025104)
+bones/21/rotation = Quaternion(0.0159591, -0.000236246, 0.0418033, 0.998998)
+bones/22/rotation = Quaternion(0.125476, 0.126638, -0.62953, 0.756248)
+bones/23/rotation = Quaternion(0.707103, 0.00162561, -0.706663, 0.025104)
+bones/24/rotation = Quaternion(0.0159591, 0.000236246, -0.0418033, 0.998998)
+bones/25/rotation = Quaternion(0.125476, -0.126638, 0.62953, 0.756248)
+
+[node name="Hair" parent="Player/Poly Girl/Armature/Skeleton3D" index="0"]
+transform = Transform3D(1.59826e-14, -6.57163e-08, -1.12467, 1.84323e-09, 1.12467, -6.57163e-08, 1.12467, -1.84323e-09, 5.18647e-14, -3.12419e-15, 0.619406, -4.47035e-08)
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.867349, 0.28811, 0.405831, -0.497701, 0.502093, 0.707246, 0, -0.815411, 0.578883, 0, 9.46126, 0)
@@ -106,3 +140,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 script = ExtResource("5_2vqgd")
 player = NodePath("../Player")
 camera_raycast_collision = 459008
+
+[editable path="Player/Poly Girl"]

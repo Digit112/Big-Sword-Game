@@ -1,16 +1,17 @@
 extends CharacterBody3D
 
 @export var camera : Camera3D
+@export var anim : AnimationPlayer
 
 @export_subgroup("Grounded Motion")
 
-@export var run_speed : float = 12
-@export var sneak_speed : float = 4
-@export var walk_speed : float = 2
+@export var run_speed : float = 10
+@export var sneak_speed : float = 1.4
+@export var walk_speed : float = 1.6
 
 @export var turn_speed : float = 960 * PI/180
 @export var sneak_turn_speed : float = 720 * PI/180
-@export var sliding_turn_speed : float = 60 * PI/180
+@export var sliding_turn_speed : float = 300 * PI/180
 
 ## Loss of velocity per second while sliding.
 @export var sliding_deceleration : float = 15
@@ -19,7 +20,7 @@ extends CharacterBody3D
 @export var sliding_friction : float = 2
 
 ## Rate of maximum lateral acceleration inparted by directional input while sliding.
-@export var sliding_max_accel : float = 4
+@export var sliding_max_lateral_acceleration : float = 4
 
 ## Axis input threshhold between walking and running.
 @export_range(0, 1) var walk_run_input_threshhold : float = 0.7
@@ -90,6 +91,14 @@ extends CharacterBody3D
 ## Equilibrium speed at which the player will no longer vertically accelerate under the influence of gravity. If the player is already moving downward faster than this, they will accelerate towards the equilibrium.
 @export var cling_vertical_equilibrium_speed : float = -12
 
+@export_subgroup("Animation Rates")
+
+@export var run_anim_mul : float = 2.8
+@export var walk_anim_mul : float = 2.0
+@export var sneak_anim_mul : float = 1.8
+
+@export var jump_anim_mul : float = 6
+
 @export_subgroup("Buffer Times & Transitions")
 
 ## How long to buffer for jumps off of the ground or walls.
@@ -102,6 +111,9 @@ extends CharacterBody3D
 @export var walk_run_trans_time : float = 0.2
 @export var run_walk_trans_time : float = 0.1
 @export var walk_stand_trans_time : float = 0.1
+
+## Duration of blending from sliding or non-grounded states into a grounded animation.
+@export var default_to_ground_trans_time : float = 0.1
 
 var stand_run_trans_time = walk_run_trans_time
 var run_stand_trans_time = run_walk_trans_time
@@ -189,6 +201,7 @@ var state_names : Dictionary = {
 
 # ---- State ---- #
 
+var state_last_frame : int = GROUNDED_STANDING
 var state : int = GROUNDED_STANDING
 
 var time_since_jump : float = INF
@@ -351,9 +364,14 @@ func dash(directional_input : Vector2) -> void:
 
 
 
+func _enter_tree() -> void:
+	anim.play("Idle")
+
 func _physics_process(delta):
 	time_since_jump += delta
 	time_since_dash += delta
+	
+	var state_this_frame = state
 	
 	# Get Stick Inputs
 	var directional_input : Vector2 = Vector2.ZERO
@@ -388,7 +406,7 @@ func _physics_process(delta):
 		# Calculate direction to move this frame, not accounting for turning
 		var lateral_velocity = Globals.lateralize(velocity)
 		var lateral_movement_dir : Vector2 = Vector2.ZERO
-		if lateral_velocity.length() > 0 and get_broad_state() != AERIAL:
+		if lateral_velocity.length() > 0 and get_broad_state() != AERIAL and get_state() != GROUNDED_SLIDING:
 			lateral_movement_dir = lateral_velocity.normalized()
 		else:
 			lateral_movement_dir = Globals.lateralize(-basis.z).normalized()
@@ -415,33 +433,35 @@ func _physics_process(delta):
 		if get_broad_state() == GROUNDED:
 			var ground_speed_this_frame : float = current_ground_speed * lateral_speed_multiplier
 			
-			if get_state() in [GROUNDED_STANDING, GROUNDED_WALKING, GROUNDED_RUNNING]:
+			if get_state() in [GROUNDED_STANDING, GROUNDED_WALKING, GROUNDED_RUNNING, GROUNDED_CROUCHED, GROUNDED_CROUCHWALKING]:
 				# TODO: Make a named dictionary maybe? Something for better readability.
-				var threshholds_states_and_speeds = [
+				var threshholds_states_speeds = [
 					[walk_run_input_threshhold, GROUNDED_RUNNING,  run_speed],
 					[0,                         GROUNDED_WALKING,  walk_speed],
 					[-1,                        GROUNDED_STANDING, 0]
 				]
 				
-				var sneaking_threshholds_states_and_speeds = [
+				var sneaking_threshholds_states_speeds = [
 					[0,  GROUNDED_CROUCHWALKING, sneak_speed],
 					[-1, GROUNDED_CROUCHED,      0]
 				]
 				
 				# Potentially adjust to new travel speed.
 				if Input.is_action_pressed("Sneak"):
-					for entry in sneaking_threshholds_states_and_speeds:
+					for entry in sneaking_threshholds_states_speeds:
 						if directional_input.length() > entry[0]:
 							if get_state() != entry[1]:
-								reset_ground_speed_tween(entry[2], ground_speed_trans_times[get_state()][entry[1]])
+								var transition_time = ground_speed_trans_times[get_state()][entry[1]]
+								reset_ground_speed_tween(entry[2], transition_time)
 								set_state(entry[1])
 							break
 				
 				else:
-					for entry in threshholds_states_and_speeds:
+					for entry in threshholds_states_speeds:
 						if directional_input.length() > entry[0]:
 							if get_state() != entry[1]:
-								reset_ground_speed_tween(entry[2], ground_speed_trans_times[get_state()][entry[1]])
+								var transition_time = ground_speed_trans_times[get_state()][entry[1]]
+								reset_ground_speed_tween(entry[2], transition_time)
 								set_state(entry[1])
 							break
 				
@@ -450,13 +470,20 @@ func _physics_process(delta):
 					#print("Valid: ", tween.is_valid(), " Covered: ", tween.get_total_elapsed_time())
 			
 			elif get_state() == GROUNDED_SLIDING:
-				ground_speed_this_frame = move_toward(
-					lateral_velocity.length(), 0, sliding_deceleration * delta
-				) * exp(-sliding_friction * delta)
+				lateral_movement_dir = lateral_velocity.move_toward(
+					Vector2.ZERO, sliding_deceleration * delta
+				) * (
+					exp(-sliding_friction * delta)
+				) + (
+					directional_input * sliding_max_lateral_acceleration * delta
+				)
 				
-				if ground_speed_this_frame < run_speed:
-					current_ground_speed = run_speed
+				if lateral_movement_dir.length() < run_speed:
+					ground_speed_this_frame = run_speed
 					set_state(GROUNDED_RUNNING)
+				
+				else:
+					ground_speed_this_frame = lateral_movement_dir.length()
 				
 			if lateral_movement_dir.length() > 0:
 				#print(lateral_movement_dir, ", ", ground_speed_this_frame, ", ", current_ground_speed, ", ", state_names[get_state()])
@@ -508,6 +535,8 @@ func _physics_process(delta):
 	if attempting_jump and can_jump:
 		jump()
 	
+	update_animation()
+	
 	move_and_slide()
 	
 	# Possibly perform a state transition in response to move_and_slide results.
@@ -528,6 +557,56 @@ func _physics_process(delta):
 		
 		if get_state() != AERIAL_SOARING and can_soar():
 			set_state(AERIAL_SOARING)
+	
+	state_last_frame = state_this_frame
+
+func update_animation():
+	# NOTE: The body of the function does not run if a state change did not occur !
+	if state_last_frame == get_state():
+		return
+	
+	const simple_grounded_states = [
+		GROUNDED_STANDING, GROUNDED_WALKING, GROUNDED_RUNNING,
+		GROUNDED_CROUCHED, GROUNDED_CROUCHWALKING
+	]
+	
+	if get_state() in simple_grounded_states:
+		const grounded_anims = {
+			GROUNDED_STANDING: "Idle", GROUNDED_WALKING: "Walk", GROUNDED_RUNNING: "Run",
+			GROUNDED_CROUCHED: "Crouching", GROUNDED_CROUCHWALKING: "Sneaking"
+		}
+		
+		var grounded_anim_rates = {
+			GROUNDED_STANDING: 1, GROUNDED_WALKING: walk_anim_mul, GROUNDED_RUNNING: run_anim_mul,
+			GROUNDED_CROUCHED: 1, GROUNDED_CROUCHWALKING: sneak_anim_mul
+		}
+		
+		var next_anim = grounded_anims[get_state()]
+		var new_speed_mul = grounded_anim_rates[get_state()]
+		
+		if anim.assigned_animation == next_anim:
+			return
+		
+		if state_last_frame in simple_grounded_states:
+			var transition_time = ground_speed_trans_times[state_last_frame][get_state()]
+			anim.play(next_anim, transition_time, new_speed_mul)
+		
+		else:
+			anim.play(next_anim, default_to_ground_trans_time, new_speed_mul)
+	
+	elif get_state() == GROUNDED_SLIDING:
+		var lateral_dir = Globals.lateralize(velocity).normalized()
+		var facing_dir = Globals.lateralize(-basis.z).normalized()
+		
+		if lateral_dir.dot(facing_dir) > 0:
+			anim.play("Sliding Forward")
+		
+		else:
+			anim.play("Sliding Backward")
+	
+	elif get_broad_state() == AERIAL:
+		if anim.assigned_animation != "Jumping":
+			anim.play("Jumping", -1, jump_anim_mul)
 
 # Correctly sets up a tween on ground speed which controls velocity in most grounded states.
 # Used to smoth the transition between standing/walking/running/crouched/sneaking (crouchwalking)

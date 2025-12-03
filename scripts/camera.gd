@@ -11,7 +11,7 @@ extends Camera3D
 @export var camera_acceleration : float = 5
 
 @export var camera_focus_offset : Vector3 = Vector3(0, 1, 0)
-@export var max_camera_distance : float = 6
+@export var max_camera_distance : float = 5
 
 # TODO: It is likely possible to adjust this value more automatically based on the camera's projection matrix or FOV in addition to the raycast collision normal.
 # TODO: Consider adjusting the camera's position along the collision normal? Could cause jittery movement.
